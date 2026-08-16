@@ -109,7 +109,7 @@ export default function App() {
             className={`btn-secondary ${activeTab === 'demo' ? 'gradient-text' : ''}`}
             style={{ fontSize: '0.9rem', padding: '8px 16px' }}
           >
-            <Terminal size={16} /> Live Agent Smith Console
+            <Terminal size={16} /> Live Agent Console
           </button>
           <button 
             onClick={() => setActiveTab('aipi')}
