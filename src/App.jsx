@@ -44,12 +44,15 @@ export default function App() {
     setCommandInput('');
     setConsoleOutput(prev => [...prev, `> ${cmd}`]);
 
-    if (cmd.toLowerCase().includes('turn off lamp')) {
-      setLampState('OFF');
-      setConsoleOutput(prev => [...prev, '[AiPi] Living Room Lamp set to OFF (Ack: 0x9921)']);
-    } else if (cmd.toLowerCase().includes('turn on lamp')) {
-      setLampState('ON');
-      setConsoleOutput(prev => [...prev, '[AiPi] Living Room Lamp set to ON (Ack: 0x9922)']);
+    if (cmd.toLowerCase().includes('turn off lamp') || cmd.toLowerCase().includes('turn on lamp')) {
+      const targetState = cmd.toLowerCase().includes('turn off') ? 'OFF' : 'ON';
+      setConsoleOutput(prev => [
+        ...prev, 
+        `[A:iB PROPOSAL] Intent parsed: Proposed action -> Set Lamp to ${targetState}`,
+        `[EMILIA GATE] Evaluating admission boundary... Status: ADMITTED (Gate Token: 0x88f1)`,
+        `[ACTUATOR] Physical relay executed -> Living Room Lamp set to ${targetState} (Ack: 0x9921)`
+      ]);
+      setLampState(targetState);
     } else if (cmd.toLowerCase().includes('email') || cmd.toLowerCase().includes('iman')) {
       setOutboxCount(prev => prev + 1);
       setConsoleOutput(prev => [...prev, '[Poka-Yoke] Formatted email envelope: [GRACE:AMBER:pr595] -> Sent to team@emiliaprotocol.ai']);
@@ -194,7 +197,7 @@ export default function App() {
                 <div className="badge-tlp badge-emerald" style={{ marginBottom: '12px' }}>Pillar 3</div>
                 <h3 style={{ fontSize: '1.4rem', marginBottom: '12px' }}>EMILIA Grid Curtailment (GRACE)</h3>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-                  Verifiable proof-of-curtailment circuit for AI compute load shedding. Bounded commands, attested meters, and lost-ack reconciliation.
+                  Evidence-bound curtailment admission and reconciliation for AI compute load shedding. Bounded commands, attested meters, and lost-ack reconciliation.
                 </p>
               </div>
             </div>
