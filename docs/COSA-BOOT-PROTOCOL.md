@@ -87,11 +87,31 @@ Different LLM architectures have distinct behavioral strengths and prompt sensit
 
 ```
 .agents/adapters/
-├── claude_adapter.md       # Enforces XML tag parsing (<thinking>) & precise code diffs
-├── gemini_adapter.md       # Optimizes for fast audio flow & structured JSON tool calls
+├── claude_adapter.md       # Enforces XML tag parsing (<thinking>) & line-by-line verification
+├── gemini_adapter.md       # Optimized for Gemini 3.6 Flash/Pro high-throughput audio & JSON tool calls
+├── grok_adapter.md         # xAI Grok: sharp, zero-fluff structural reasoning & security auditing
+├── composer_adapter.md     # Cursor/Composer IDE: multi-file refactoring & drop-in code edits
 ├── copilot_adapter.md      # Binds M365 Graph API, Word, & Outlook automation rules
 └── local_vllm_adapter.md   # Tight context budgeting & raw Markdown stop tokens
 ```
+
+---
+
+## 3.5. The Self-Correcting Boot Flywheel (`$suggestionbox`)
+
+To ensure that **every boot cycle is better than the last**, COSA introduces a closed-loop feedback mechanism:
+
+```mermaid
+flowchart TD
+    A["1. Pre-Boot Ingestion\n(Ingests $suggestionbox & Active Model Adapter)"] --> B["2. Session Execution\n(Agent Smith / CEO Interaction)"]
+    B --> C["3. Pre-Close Reflection\n(Captures Friction & Model Comfort Level)"]
+    C --> D["4. Model Radar Check\n(Scans for New LLM Engine Releases)"]
+    D --> E["5. Write to $suggestionbox\n(.agents/flywheel/suggestion_box.md)"]
+    E ==> A
+```
+
+* **Pre-Boot Routine**: Ingests active course corrections from `.agents/flywheel/suggestion_box.md` and appends the active model adapter (`grok`, `gemini`, `composer`, `claude`).
+* **Pre-Close Routine**: Prompts the active LLM engine for self-assessment (*"What mucked up this turn? What can be tuned?"*), checks the Model Radar for fresh releases, and logs actionable fixes into `$suggestionbox` for the next cycle.
 
 ---
 
