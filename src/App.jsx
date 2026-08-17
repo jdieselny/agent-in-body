@@ -65,8 +65,18 @@ export default function App() {
     ]);
   };
 
-  const handleApproveGateOrder = () => {
+  const handleApproveGateOrder = async () => {
     if (!pendingOrder) return;
+
+    // Simulate WebAuthn Passkey hardware challenge (Windows Hello / Touch ID / FIDO2)
+    let passkeyStatus = 'Verified (WebAuthn Passkey Assertion)';
+    try {
+      if (window.PublicKeyCredential && typeof navigator.credentials?.get === 'function') {
+        setConsoleOutput(prev => [...prev, `[WEBAUTHN PASSKEY] Prompting hardware passkey (Windows Hello / Touch ID)...`]);
+      }
+    } catch (e) {
+      console.warn('WebAuthn API fallback active:', e);
+    }
 
     setLampState('OFF');
     setPowerDraw(0);
@@ -74,13 +84,16 @@ export default function App() {
     setChimeActive(false);
 
     const proofHash = `sha256:${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
+    const passkeyId = `webauthn_spki_${Math.random().toString(36).substring(2, 10)}`;
 
     setConsoleOutput(prev => [
       ...prev,
-      `[EMILIA GATE 2FA] ✅ USER APPROVED! Gate Admission Token issued: 0x88f1`,
+      `[WEBAUTHN PASSKEY] 🔑 Human Principal Biometric Hardware Assertion Verified!`,
+      `[WEBAUTHN PASSKEY] Credential SPKI: ${passkeyId} (User: Justin Kintzele / Principal)`,
+      `[EMILIA GATE 2FA] ✅ Class-A Passkey Signature Verified! Gate Admission Token: 0x88f1`,
       `[ACTUATOR RELAY] Executing physical relay toggle on aipi-livingroom-01...`,
       `[ACTUATOR RELAY] Living Room Lamp (Micro-Datacenter 700W Load) -> CURTAILED / OFF (0W Power Draw)`,
-      `[PROOF-OF-CURTAILMENT] Settlement bundle signed & generated: ${proofHash}`,
+      `[PROOF-OF-CURTAILMENT] Settlement bundle signed (Human Passkey + Agent Key + Relay Ack): ${proofHash}`,
       `[emilia-mailbox] Sent attested execution receipt to iso-ne.grid.agent (Status: EXECUTED)`
     ]);
     setOutboxCount(prev => prev + 1);
@@ -538,7 +551,7 @@ export default function App() {
                 className="btn-primary" 
                 style={{ flex: 1, padding: '14px', justifyContent: 'center', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 0 16px rgba(16, 185, 129, 0.4)' }}
               >
-                <CheckCircle2 size={18} /> APPROVE & ADMIT (2FA 0x88f1)
+                <CheckCircle2 size={18} /> APPROVE WITH WEBAUTHN PASSKEY (FIDO2)
               </button>
               <button 
                 onClick={handleDenyGateOrder} 
