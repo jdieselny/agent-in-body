@@ -1,16 +1,16 @@
-# Agent-in-Body (A:iB) — Protocol Specification & Architecture (v1.2.0)
+# Agent-in-Body (A:iB) — Architecture & Implementation Plan (v1.2.0-draft)
 
-> **Status:** Standard Reference Specification  
+> **Status:** Draft Implementation Plan & Architecture Document  
 > **Repository:** [`https://github.com/jdieselny/agent-in-body`](https://github.com/jdieselny/agent-in-body)  
-> **Key Standards:** DNS-AID (DNSSEC Public Key Discovery), EMILIA-Mailbox (Asynchronous Intent Transport), EMILIA Gate (Purpose-Bound Admission Boundary)
+> **Core Concepts:** Asynchronous Intent Proposal, Independent Admission Boundaries, DNS Transport Key Discovery (Planned Feature)
 
 ---
 
 ## 1. Executive Summary
 
-**Agent-in-Body (A:iB)** is a vendor-agnostic, local-first operating specification that decouples AI agent identity, state, and execution from proprietary cloud platforms. 
+**Agent-in-Body (A:iB)** is a vendor-agnostic, local-first operating model that decouples AI agent identity, state, and execution from proprietary cloud platforms. 
 
-Rather than treating an AI agent as a hosted cloud API endpoint or forcing real-time coordination into fragile, synchronous TCP/TLS sessions (`draft-feng-00`), **A:iB defines an agent by its locally generated cryptographic key pair and domain enrollment**.
+Rather than treating an AI agent as a hosted cloud API endpoint, **A:iB defines an agent by its locally generated cryptographic key pair and domain enrollment**.
 
 ```text
  ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -29,13 +29,13 @@ Rather than treating an AI agent as a hosted cloud API endpoint or forcing real-
 ┌───────────────────────┐  ┌───────────────────────┐  ┌───────────────────────┐
 │ DISCOVERY (DNS-AID)   │  │ TRANSPORT (MAILBOX)   │  │ ADMISSION (GATE)      │
 │ `_agent.<domain>` TXT │  │ Asynchronous Intent   │  │ Purpose-Bound         │
-│ DNSSEC Public Key     │  │ Signed Envelopes      │  │ Independent Admission │
+│ (Planned Feature)     │  │ Signed Envelopes      │  │ Independent Admission │
 └───────────────────────┘  └───────────────────────┘  └───────────────────────┘
 ```
 
 ---
 
-## 2. Separation of Identities (Iman's Strict Boundary)
+## 2. Separation of Identities (Strict Boundary)
 
 To ensure cryptographic integrity and prevent privilege escalation, A:iB strictly separates three distinct identities:
 
@@ -65,11 +65,11 @@ Upon initialization on any host (desktop, smartphone, or AiPi micro-controller),
 
 ---
 
-## 4. Cryptographic Agent Enrollment Protocol
+## 4. Cryptographic Agent Enrollment & Discovery (Planned Specs)
 
-### Domain Enrollment (The Active Directory Model)
+### Domain Enrollment (Active Directory Model)
 
-Agents do not negotiate capabilities during live TCP sessions. Capability declarations, public keys, and group memberships are established during **Domain Enrollment**:
+Capabilities and public keys are declared during **Domain Enrollment** rather than negotiated live during active transactions:
 
 ```json
 {
@@ -89,40 +89,43 @@ Agents do not negotiate capabilities during live TCP sessions. Capability declar
 }
 ```
 
-### DNS-Anchored Discovery (DNS-AID):
+### DNS-Anchored Key Publication (DNS-AID — Planned Feature):
 
-To allow any relying party to discover and verify an agent out-of-band without centralized OAuth servers:
+DNS offers a vendor-neutral location to publish and rotate transport public keys:
 
 ```dns
 _agent.jdieselny.com.  3600  IN  TXT  "v=AIB1; alg=ed25519; pub=bBASBc4TI+ROrnlwqur1QMjEQCrOjkpX0YgKNMWbzPo=; transport=emilia-mailbox; status=active"
 ```
+
+*Note on DNS Revocation:* Updating a DNS TXT record serves as a **revocation signal** bound by TTL caching. The Gate requires a fresh, authenticated record and fails closed if stale, missing, or conflicting.
 
 ---
 
 ## 5. End-to-End Execution Sequence: Proposal to Actuation
 
 ```text
-  1. USER Intent ──> 2. A:iB Formats ──> 3. DNS-AID Check ──> 4. EMILIA Gate ──> 5. Actuator Ack
-  ("Turn off lamp")   Proposed Envelope   (Verify PubKey)     (Admit / Refuse)   (Executed/Refused)
+  1. USER Intent ──> 2. A:iB Formats ──> 3. Transport Verification ──> 4. EMILIA Gate ──> 5. Actuator Ack
+  ("Turn off lamp")   Proposed Envelope     (Verify PubKey)          (Admit / Refuse)   (Executed/Refused)
 ```
 
 1. **A:iB Proposes Action**: A:iB parses human intent and formats a **Proposed Action Envelope**. *(A:iB NEVER directly mutates physical hardware without Gate admission).*
-2. **Mailbox Transport**: The envelope is signed and delivered via `emilia-mailbox`.
-3. **DNS-AID Verification**: The receiving router verifies `sender_domain` via `_agent.<domain>` DNSSEC lookup.
-4. **EMILIA Gate Admission**: The independent EMILIA Gate evaluates whether the exact action is authorized, unexpired, and within purpose bounds.
+2. **Mailbox Transport**: The envelope is signed by the transport signer and delivered via `emilia-mailbox`.
+3. **Transport Verification**: The receiving router verifies transport signatures and sender domain key assertions.
+4. **EMILIA Gate Admission**: The independent EMILIA Gate evaluates whether the exact action is authorized by the Principal, unexpired, and within purpose bounds.
 5. **Actuator Execution**: The physical actuator (AiPi BL602/ESP32) executes the command ONLY if Gate admission is present, returning an attested status (`executed`, `refused`, or `indeterminate`).
 
 ---
 
-## 6. Hostile Case Matrix & Security Fail-Closed Boundaries
+## 6. Implementation & Verification Roadmap
 
-| Hostile Condition | Protocol Behavior | Result |
-| :--- | :--- | :--- |
-| **Stale / Missing DNS Record** | Resolver fails to fetch `_agent.<domain>` or DNSSEC fails. | **Fails Closed**. Gate refuses physical admission. Envelope marked Class-B Guest. |
-| **Replayed Envelope ID** | Envelope contains a previously observed `message_id`. | **Fails Closed**. Rejected as replay attack. |
-| **Key Misuse (Persona $\neq$ Authority)** | Transport key attempts to self-authorize Gate admission. | **Fails Closed**. Transport signature cannot authorize actuation. |
-| **Un-enrolled Unknown Sender** | Sender has no entry in domain enrollment or DNS. | **Class-B Guest Fallback**. Allowed for read/comment, blocked from actuation. |
+| Feature / Boundary | Specification Status | Implementation Status | Test Evidence |
+| :--- | :--- | :--- | :--- |
+| **Strict 3-Identity Separation** | Specified (`v1.2.0-draft`) | Active in Architecture | Enforced in `verify_truth_root.py` |
+| **Class-B Guest Fallback** | Specified (`v1.2.0-draft`) | Active in `emilia-mailbox` | Verified in unit tests (`7d3c35b`) |
+| **Action Proposal Flow** | Specified (`v1.2.0-draft`) | Active in Web Console | Demonstrated in `agent-in-body-web` |
+| **DNS-AID TXT Resolution** | Specified (`v1.2.0-draft`) | Prototyped (`dns_agent_resolver.py`)| Planned for full DNSSEC test suite |
+| **TTL Freshness & Stale Cache** | Specified (`v1.2.0-draft`) | Planned | Planned Hostile Test Suite |
 
 ---
 
-*Master Reference Specification — Agent-in-Body (A:iB) v1.2.0*
+*Draft Implementation Plan & Architecture Document — Agent-in-Body (A:iB) v1.2.0-draft*
